@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: limits-service
+
+limits:
+  default:
+    replenishRate: 20
+    burstCapacity: 40
+  routes:
+    "/api/**":
+      anonymous:
+        replenishRate: 10
+        burstCapacity: 20
+      authenticated:
+        replenishRate: 30
+        burstCapacity: 60
+
+features:
+  voting:
+    enabled: true
+  createPoll:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

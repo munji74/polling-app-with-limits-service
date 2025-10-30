@@ -1,0 +1,26 @@
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      routes:
+        - id: auth
+          # if you’re not using Eureka yet, point at localhost for now
+          uri: http://localhost:8081
+          predicates: [ Path=/api/auth/** ]
+        - id: poll
+          uri: http://localhost:8082
+          predicates: [ Path=/api/** ]
+          filters:
+            - name: RequestRateLimiter
+              args:
+                # you’ll register this bean in gateway later
+                rate-limiter: "#{@dynamicBucket4jRateLimiter}"
+                key-resolver: "#{@principalOrIpKeyResolver}"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
