@@ -9,6 +9,7 @@
         <option value="$PROJECT_DIR$/naming-server/pom.xml" />
         <option value="$PROJECT_DIR$/template-service/pom.xml" />
         <option value="$PROJECT_DIR$/config-service/pom.xml" />
+        <option value="$PROJECT_DIR$/limits-service/pom.xml" />
       </list>
     </option>
   </component>

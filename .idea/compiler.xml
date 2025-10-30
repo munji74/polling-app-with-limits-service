@@ -10,6 +10,7 @@
         <module name="templateservice" />
         <module name="user-service" />
         <module name="config-service" />
+        <module name="limits-service" />
         <module name="naming-server" />
       </profile>
     </annotationProcessing>
@@ -18,6 +19,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
       <module name="config-service" options="-parameters" />
+      <module name="limits-service" options="-parameters" />
       <module name="naming-server" options="-parameters" />
       <module name="templateservice" options="-parameters" />
       <module name="user-service" options="-parameters" />
