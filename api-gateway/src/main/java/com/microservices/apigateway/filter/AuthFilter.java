@@ -1,73 +1,69 @@
 package com.microservices.apigateway.filter;
 
+import com.microservices.apigateway.config.RouteValidator;
+import com.microservices.apigateway.util.JwtUtil;
+import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-
-import com.microservices.apigateway.config.RouteValidator;
-import com.microservices.apigateway.util.JwtUtil;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 @Component
 public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> {
 
-	public AuthFilter() {
-		super(Config.class);
-	}
+    public static class Config { /* empty */ }
 
-	@Autowired
-	private RouteValidator validator;
+    private final RouteValidator validator;
+    private final JwtUtil jwtUtil;
 
-	@Autowired
-	private JwtUtil jwtUtil;
+    @Autowired
+    public AuthFilter(RouteValidator validator, JwtUtil jwtUtil) {
+        super(Config.class);
+        this.validator = validator;
+        this.jwtUtil = jwtUtil;
+    }
 
-	@Override
-	public GatewayFilter apply(Config config) {
+    @Override
+    public GatewayFilter apply(Config config) {
+        return (exchange, chain) -> {
+            var request = exchange.getRequest();
 
-		return ((exchange, chain) -> {
-			ServerHttpRequest request = null;
+            if (validator.isSecured.test(request)) {
+                String auth = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+                if (auth == null || !auth.startsWith("Bearer ")) {
+                    return unauthorized(exchange);
+                }
+                String token = auth.substring(7);
 
-			if (!validator.isSecured.test(exchange.getRequest())) {
+                try {
+                    Claims claims = jwtUtil.validateAndGetClaims(token);
+                    String sub   = claims.getSubject();            // user id
+                    String email = (String) claims.get("email");
+                    String roles = (String) claims.get("roles");
 
-				// header contains token or not
-				if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+                    var mutated = request.mutate()
+                            .header("X-User-Id", sub == null ? "" : sub)
+                            .header("X-User-Email", email == null ? "" : email)
+                            .header("X-User-Roles", roles == null ? "" : roles)
+                            .build();
 
-					throw new RuntimeException("missing authorization header");
-				}
+                    return chain.filter(exchange.mutate().request(mutated).build());
 
-				String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
-				if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                } catch (Exception e) {
+                    return unauthorized(exchange);
+                }
+            }
 
-					authHeader = authHeader.substring(7);
-				}
+            return chain.filter(exchange);
+        };
+    }
 
-				try {
-
-					/*
-					 * Validate Token and add custom header
-					 */
-					if (jwtUtil.validateUserToken(authHeader)) {
-
-						request = exchange.getRequest().mutate()
-								.header("session-user", jwtUtil.getUserClaims(authHeader)).build();
-
-					} else {
-
-						throw new RuntimeException("un authorized token");
-					}
-
-				} catch (Exception e) {
-
-					throw new RuntimeException("un authorized access");
-				}
-			}
-			return chain.filter(exchange.mutate().request(request).build());
-		});
-	}
-
-	public static class Config {
-
-	}
+    private Mono<Void> unauthorized(ServerWebExchange exchange) {
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        return exchange.getResponse().setComplete();
+    }
 }

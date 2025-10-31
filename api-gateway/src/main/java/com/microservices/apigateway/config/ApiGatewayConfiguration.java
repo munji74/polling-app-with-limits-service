@@ -1,45 +1,36 @@
 package com.microservices.apigateway.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.microservices.apigateway.filter.AuthFilter;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.microservices.apigateway.filter.AuthFilter;
-
 @Configuration
 public class ApiGatewayConfiguration {
 
-	@Autowired
-	AuthFilter authFilter;
+    @Bean
+    public RouteLocator gatewayRoutes(RouteLocatorBuilder builder, AuthFilter authFilter) {
+        return builder.routes()
 
-	@Bean
-	public RouteLocator gatewayRouter(RouteLocatorBuilder builder) {
-		return builder.routes()
+                // Public auth endpoints -> user-service (NO auth filter)
+                .route("user-auth", r -> r.path("/auth/**")
+                        .uri("lb://user-service"))
 
-				/*
-				 * Routes for Authentication
-				 */
+                // Everything else to user-service (WITH auth filter)
+                .route("user-protected", r -> r.path("/api/users/**")
+                        .filters(f -> f.filter(authFilter.apply(new AuthFilter.Config())))
+                        .uri("lb://user-service"))
 
-				.route(p -> p.path("/auth/**").filters(f -> f.rewritePath("/auth/(?<segment>.*)", "/auth/${segment}"))
-						.uri("lb://user-service"))
+                // Example: poll-service protected routes (if you have it)
+                .route("poll-protected", r -> r.path("/api/polls/**")
+                        .filters(f -> f.filter(authFilter.apply(new AuthFilter.Config())))
+                        .uri("lb://poll-service"))
 
-				/*
-				 * Routes for User Service
-				 */
+                // Actuator passthrough (no filter)
+                .route("actuator", r -> r.path("/actuator/**")
+                        .uri("lb://api-gateway"))
 
-				.route(p -> p.path("/user/**").filters(f -> f.filter(authFilter.apply(new AuthFilter.Config())))
-						.uri("lb://user-service"))
-
-				/*
-				 * Routes for Template Service
-				 */
-
-				.route(p -> p.path("/template/**").filters(f -> f.filter(authFilter.apply(new AuthFilter.Config())))
-						.uri("lb://template-service"))
-
-				.build();
-	}
-
+                .build();
+    }
 }

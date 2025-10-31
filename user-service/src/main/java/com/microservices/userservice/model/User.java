@@ -1,125 +1,111 @@
 package com.microservices.userservice.model;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.hibernate.annotations.NaturalId;
-
-import com.microservices.userservice.audit.DateAudit;
-import com.microservices.userservice.util.enums.Status;
-
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 @Entity
-@Table(name = "user", uniqueConstraints = { @UniqueConstraint(columnNames = { "username" }),
-		@UniqueConstraint(columnNames = { "email" }) })
-public class User extends DateAudit {
+@Table(name = "users", uniqueConstraints = { @UniqueConstraint(columnNames = { "email" }) })
+public class User {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@NotBlank
-	@Size(max = 250)
-	private String name;
+    @Column(length = 80)
+    private String name;
 
-	@NotBlank
-	@Size(max = 50)
-	private String username;
+    @Column(nullable = false, length = 190)
+    private String email;
 
-	@NaturalId
-	@NotBlank
-	@Size(max = 60)
-	@Email
-	private String email;
+    @Column(name = "password_hash", nullable = false, length = 100)
+    private String passwordHash;
 
-	@NotBlank
-	@Size(max = 100)
-	private String password;
+    // map to existing enum-style user_roles table (columns: user_id, role)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Enumerated(EnumType.STRING)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "role", length = 20)
+    private Set<com.microservices.userservice.util.enums.Role> roles = new HashSet<>();
 
-	private Status status;
+    @Column(name = "created_at")
+    private Instant createdAt;
 
-	@ManyToMany(fetch = FetchType.LAZY)
-	@JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
-	private Set<Role> roles = new HashSet<>();
+    @PrePersist
+    void onCreate() {
+        this.createdAt = Instant.now();
+    }
 
-	public User() {
-		super();
-	}
+    public User() {
+    }
 
-	public User(String name, String username, String email, String password) {
-		this.name = name;
-		this.username = username;
-		this.email = email;
-		this.password = password;
-	}
+    public User(String name, String email, String passwordHash) {
+        this.name = name;
+        this.email = email;
+        this.passwordHash = passwordHash;
+    }
 
-	public Long getId() {
-		return id;
-	}
+    public Long getId() {
+        return id;
+    }
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public String getUsername() {
-		return username;
-	}
+    public String getEmail() {
+        return email;
+    }
 
-	public void setUsername(String username) {
-		this.username = username;
-	}
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-	public String getEmail() {
-		return email;
-	}
+    public String getPasswordHash() {
+        return passwordHash;
+    }
 
-	public void setEmail(String email) {
-		this.email = email;
-	}
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
 
-	public String getPassword() {
-		return password;
-	}
+    public Set<com.microservices.userservice.util.enums.Role> getRoles() {
+        return roles;
+    }
 
-	public void setPassword(String password) {
-		this.password = password;
-	}
+    public void setRoles(Set<com.microservices.userservice.util.enums.Role> roles) {
+        this.roles = roles;
+    }
 
-	public Status getStatus() {
-		return status;
-	}
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 
-	public void setStatus(Status status) {
-		this.status = status;
-	}
-
-	public Set<Role> getRoles() {
-		return roles;
-	}
-
-	public void setRoles(Set<Role> roles) {
-		this.roles = roles;
-	}
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
 
 }

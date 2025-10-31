@@ -11,8 +11,6 @@ import com.microservices.userservice.payload.auth.UserDetailsResponse;
 import com.microservices.userservice.payload.user.UserDetailsRequest;
 import com.microservices.userservice.service.UserService;
 
-import jakarta.validation.Valid;
-
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -24,7 +22,7 @@ public class UserController {
 	 * Find User Details by Payload Request
 	 */
 	@PostMapping("/get-user-details")
-	public UserDetailsResponse getUserDetails(@Valid @RequestBody UserDetailsRequest request) {
+	public UserDetailsResponse getUserDetails(@RequestBody UserDetailsRequest request) {
 		return userService.getUserDetails(request);
 	}
 

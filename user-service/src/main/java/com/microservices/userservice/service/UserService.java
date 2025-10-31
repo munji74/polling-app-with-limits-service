@@ -9,6 +9,7 @@ import com.microservices.userservice.model.User;
 import com.microservices.userservice.payload.auth.UserDetailsResponse;
 import com.microservices.userservice.payload.user.UserDetailsRequest;
 import com.microservices.userservice.repository.UserRepository;
+import com.microservices.userservice.util.enums.Role;
 
 @Service
 public class UserService {
@@ -24,9 +25,12 @@ public class UserService {
 
 			response.setId(user.getId());
 			response.setName(user.getName());
-			response.setUsername(user.getUsername());
 			response.setEmail(user.getEmail());
-			response.setStatus(user.getStatus());
+			// pick a primary role if present
+			if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+				Role r = user.getRoles().iterator().next();
+				response.setRoleName(r);
+			}
 
 		}
 
@@ -39,9 +43,9 @@ public class UserService {
 
 		Optional<User> user = request.getId() != null ? userRepository.findById(request.getId()) : Optional.empty();
 
-		user = !user.isPresent() && request.getUsernameOrEmail() != null
-				? userRepository.findByUsernameOrEmail(request.getUsernameOrEmail(), request.getUsernameOrEmail())
-				: user;
+		if (!user.isPresent() && request.getUsernameOrEmail() != null) {
+			user = userRepository.findByEmail(request.getUsernameOrEmail());
+		}
 
 		if (user.isPresent()) {
 			response = getUserDetails(user.get());

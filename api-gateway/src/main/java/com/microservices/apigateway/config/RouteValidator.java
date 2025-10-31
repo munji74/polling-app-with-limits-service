@@ -1,17 +1,30 @@
 package com.microservices.apigateway.config;
 
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.function.Predicate;
 
-import org.springframework.http.server.reactive.ServerHttpRequest;
-
 @Component
 public class RouteValidator {
 
-	public static final List<String> openApiEndpoints = List.of("http://localhost:8765/auth/sign-in");
+    // Paths that DO NOT require a token
+    public static final List<String> OPEN_API_ENDPOINTS = List.of(
+            "/auth/sign-in",
+            "/auth/sign-up",
+            "/actuator",
+            "/actuator/" // allow exact and prefix
+    );
 
-	public Predicate<ServerHttpRequest> isSecured = request -> openApiEndpoints.stream()
-			.anyMatch(r -> r.contains(request.getURI().getPath()));
+    // True if the path REQUIRES a token
+    public Predicate<ServerHttpRequest> isSecured = request -> {
+        final String path = request.getURI().getPath();
+        return OPEN_API_ENDPOINTS.stream().noneMatch(pattern -> {
+            if (pattern.endsWith("/")) {
+                return path.startsWith(pattern);
+            }
+            return path.equals(pattern);
+        });
+    };
 }

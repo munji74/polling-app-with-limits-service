@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: user-service
+  config:
+    import: optional:configserver:http://localhost:8888
+
+server:
+  port: 8081
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:CHANGE_ME_IN_CONFIG_SERVER}
+    issuer: polling-app-auth
+    access-exp-seconds: 3600

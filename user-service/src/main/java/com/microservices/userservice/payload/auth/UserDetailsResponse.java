@@ -1,6 +1,6 @@
 package com.microservices.userservice.payload.auth;
 
-import com.microservices.userservice.util.enums.RoleName;
+import com.microservices.userservice.util.enums.Role;
 import com.microservices.userservice.util.enums.Status;
 
 import lombok.Getter;
@@ -16,12 +16,10 @@ public class UserDetailsResponse {
 
 	private Long id;
 
-	private String username;
-
 	private String email;
 
 	private Status status;
 
-	private RoleName roleName;
+	private Role roleName;
 
 }

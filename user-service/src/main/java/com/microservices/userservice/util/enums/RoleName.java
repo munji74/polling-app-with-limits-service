@@ -1,5 +1,6 @@
 package com.microservices.userservice.util.enums;
 
+@Deprecated
 public enum RoleName {
-	ROLE_ADMIN, ROLE_USER
+    // replaced by com.microservices.userservice.util.enums.Role
 }

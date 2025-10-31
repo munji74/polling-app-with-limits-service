@@ -1,34 +1,30 @@
 package com.microservices.userservice.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.microservices.userservice.payload.AuthResponse;
+import com.microservices.userservice.payload.LoginRequest;
+import com.microservices.userservice.payload.RegisterRequest;
+import com.microservices.userservice.service.AuthAppService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.microservices.userservice.payload.auth.LoginRequest;
-import com.microservices.userservice.payload.auth.SignUpRequest;
-import com.microservices.userservice.service.AuthenticationService;
-
-import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthenticationController {
 
-	@Autowired
-	private AuthenticationService authenticationService;
+    private final AuthAppService auth;
 
-	@PostMapping("/sign-in")
-	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-		return authenticationService.authenticateUser(loginRequest);
-	}
+    public AuthenticationController(AuthAppService auth) {
+        this.auth = auth;
+    }
 
-	@PostMapping("/sign-up")
-	public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
+    @PostMapping("/sign-up")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
+        auth.register(req);
+        return ResponseEntity.ok().build();
+    }
 
-		return authenticationService.registerUser(signUpRequest);
-	}
-
+    @PostMapping("/sign-in")
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest req) {
+        return ResponseEntity.ok(auth.login(req));
+    }
 }
