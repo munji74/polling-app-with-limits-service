@@ -7,6 +7,15 @@ spring:
 server:
   port: 8765
 
+limits:
+  service:
+    url: http://localhost:8082
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:CHANGE_ME_IN_CONFIG_SERVER}
+    issuer: polling-app-auth
+
 eureka:
   client:
     serviceUrl:
@@ -17,9 +26,3 @@ management:
     web:
       exposure:
         include: health,info,prometheus
-
-# JWT values should live in config-repo; keep here only for local dev if needed
-security:
-  jwt:
-    secret: ${JWT_SECRET:CHANGE_ME_IN_CONFIG_SERVER}
-    issuer: polling-app-auth

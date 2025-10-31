@@ -34,7 +34,7 @@ eureka:
     register-with-eureka: true
   instance:
     hostname: localhost
-    prefer-ip-address: true
+    prefer-ip-address: false
     lease-renewal-interval-in-seconds: 30
     lease-expiration-duration-in-seconds: 90
 
