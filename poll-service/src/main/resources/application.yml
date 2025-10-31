@@ -31,7 +31,8 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
   instance:
-    prefer-ip-address: true
+    prefer-ip-address: false
+    hostname: localhost
     instance-id: ${spring.application.name}:${server.port}
 
 # Actuator Endpoints
