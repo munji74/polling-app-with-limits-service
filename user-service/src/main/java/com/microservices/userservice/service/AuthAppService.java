@@ -7,9 +7,11 @@ import com.microservices.userservice.payload.RegisterRequest;
 import com.microservices.userservice.repository.UserRepository;
 import com.microservices.userservice.security.JwtService;
 import com.microservices.userservice.util.enums.Role;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,7 +30,8 @@ public class AuthAppService {
 
     @Transactional
     public void register(RegisterRequest req) {
-        if (users.existsByEmail(req.email())) throw new IllegalArgumentException("Email already in use");
+        if (users.existsByEmail(req.email()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
 
         var user = new User();
         user.setName(req.name());
@@ -44,10 +47,10 @@ public class AuthAppService {
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest req) {
         var user = users.findByEmail(req.email())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
 
         if (!encoder.matches(req.password(), user.getPasswordHash())) {
-            throw new IllegalArgumentException("Invalid credentials");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
         // Build CSV from Set<Role> (USER,ADMIN,...)

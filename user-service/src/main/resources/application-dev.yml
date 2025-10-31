@@ -1,8 +1,7 @@
-
 # language: yaml
 # File: user-service/src/main/resources/application-dev.yml
 server:
-  port: 8000
+  port: 8081
 
 spring:
   application:
@@ -11,7 +10,7 @@ spring:
     allow-circular-references: true
     lazy-initialization: true
   datasource:
-    url: jdbc:mariadb://localhost:3306/authdb?useSSL=false&serverTimezone=UTC
+    url: jdbc:mariadb://localhost:3306/authdb
     username: app
     password: app
     driver-class-name: org.mariadb.jdbc.Driver
@@ -33,6 +32,7 @@ spring:
 
 logging:
   level:
+    org.springframework.security: DEBUG
     org.hibernate.SQL: info
   pattern:
     level: "%5p [${spring.application.name:},${X-B3-TraceId:-},${X-B3-SpanId:-}]"
@@ -69,9 +69,12 @@ management:
 app:
   cors:
     allowedOrigins: "*"
+  jwt:
+    secret: "L+tc2CP2cSx2R6y4D1S0rME2SLYeiq2NwqxYnhtGe0LSHNaxt4beEmQixlpQ7GoPz6+zYd2alMISFnP2ecNJSQ=="
+    expires-in: 3600000
 
 security:
   jwt:
-    secret: 4e96bde4beb408133e5d5cc89987be410eb71d6418c34d0f47a83c9bb0c73fd2d171c4b1b3f9503922888d557f0de47dd01ff97a68b482e8c58acda
-    access-exp-seconds: 10800
-
+    # Keep access-exp-seconds used by JwtService; value set to 3600 seconds (1 hour)
+    secret: "L+tc2CP2cSx2R6y4D1S0rME2SLYeiq2NwqxYnhtGe0LSHNaxt4beEmQixlpQ7GoPz6+zYd2alMISFnP2ecNJSQ=="
+    access-exp-seconds: 3600
