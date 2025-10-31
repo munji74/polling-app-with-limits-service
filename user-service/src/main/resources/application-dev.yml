@@ -11,9 +11,9 @@ spring:
     allow-circular-references: true
     lazy-initialization: true
   datasource:
-    url: jdbc:mariadb://localhost:3307/users_db?useSSL=false&serverTimezone=UTC
-    username: root
-    password: 'munji1280'
+    url: jdbc:mariadb://localhost:3306/authdb?useSSL=false&serverTimezone=UTC
+    username: app
+    password: app
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     properties:

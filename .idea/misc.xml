@@ -10,6 +10,7 @@
         <option value="$PROJECT_DIR$/template-service/pom.xml" />
         <option value="$PROJECT_DIR$/config-service/pom.xml" />
         <option value="$PROJECT_DIR$/limits-service/pom.xml" />
+        <option value="$PROJECT_DIR$/poll-service/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">

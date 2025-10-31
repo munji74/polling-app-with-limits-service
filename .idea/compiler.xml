@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="api-gateway" />
+        <module name="poll-service" />
         <module name="user-service" />
         <module name="config-service" />
         <module name="limits-service" />
@@ -24,6 +25,7 @@
       <module name="config-service" options="-parameters" />
       <module name="limits-service" options="-parameters" />
       <module name="naming-server" options="-parameters" />
+      <module name="poll-service" options="-parameters" />
       <module name="templateservice" options="-parameters" />
       <module name="user-service" options="-parameters" />
     </option>

@@ -21,5 +21,5 @@ management:
 # JWT values should live in config-repo; keep here only for local dev if needed
 security:
   jwt:
-    secret: ${JWT_SECRET:CHANGE_ME_IN_CONFIG_SERVER}
+    secret: mySuperStrongSecretKeyThatIsAtLeast32CharactersLong!
     issuer: polling-app-auth
