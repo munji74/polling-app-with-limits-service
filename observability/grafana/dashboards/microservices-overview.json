@@ -24,8 +24,8 @@
   "panels": [
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Shows which services are currently running (1 = UP, 0 = DOWN)",
-      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "description": "Shows which services are UP (green) or DOWN (red)",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
       "id": 1,
       "options": {
         "colorMode": "background",
@@ -33,7 +33,6 @@
         "justifyMode": "center",
         "orientation": "horizontal",
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showPercentChange": false,
         "textMode": "value_and_name",
         "wideLayout": true
       },
@@ -45,13 +44,13 @@
           "refId": "A"
         }
       ],
-      "title": "🟢 Service Health Status",
+      "title": "Service Health",
       "type": "stat",
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "options": { "0": { "color": "red", "index": 1, "text": "DOWN ❌" } }, "type": "value" },
-            { "options": { "1": { "color": "green", "index": 0, "text": "UP ✅" } }, "type": "value" }
+            { "options": { "0": { "color": "red", "index": 1, "text": "DOWN" } }, "type": "value" },
+            { "options": { "1": { "color": "green", "index": 0, "text": "UP" } }, "type": "value" }
           ],
           "thresholds": {
             "mode": "absolute",
@@ -65,7 +64,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Request rate per service (excluding actuator endpoints)",
+      "description": "Requests per second by service",
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
@@ -73,10 +72,10 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
       "id": 2,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["last", "mean"] },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "targets": [
@@ -86,7 +85,7 @@
           "refId": "A"
         }
       ],
-      "title": "📊 HTTP Requests Rate",
+      "title": "Request Rate",
       "type": "timeseries"
     },
     {
@@ -99,30 +98,25 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
       "id": 3,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["last", "mean"] },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri!~\".*actuator.*\"}[5m])) by (le, job)) * 1000",
-          "legendFormat": "p95 {{job}}",
+          "legendFormat": "{{job}}",
           "refId": "A"
-        },
-        {
-          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{uri!~\".*actuator.*\"}[5m])) by (le, job)) * 1000",
-          "legendFormat": "p50 {{job}}",
-          "refId": "B"
         }
       ],
-      "title": "⚡ HTTP Response Time (p95 & p50)",
+      "title": "Response Time (p95)",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "JVM heap memory usage in megabytes",
+      "description": "Heap memory usage in megabytes",
       "fieldConfig": {
         "defaults": {
           "unit": "decmbytes",
@@ -130,92 +124,25 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 14 },
       "id": 4,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["last", "mean"] },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "targets": [
         {
           "expr": "sum(jvm_memory_used_bytes{area=\"heap\"}) by (job) / 1024 / 1024",
-          "legendFormat": "Used - {{job}}",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(jvm_memory_committed_bytes{area=\"heap\"}) by (job) / 1024 / 1024",
-          "legendFormat": "Committed - {{job}}",
-          "refId": "B"
-        }
-      ],
-      "title": "💾 JVM Heap Memory (MB)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Database connection pool status for services with databases",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": { "mode": "palette-classic" }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "id": 5,
-      "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean"] },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "targets": [
-        {
-          "expr": "hikaricp_connections_active",
-          "legendFormat": "Active - {{application}}",
-          "refId": "A"
-        },
-        {
-          "expr": "hikaricp_connections_idle",
-          "legendFormat": "Idle - {{application}}",
-          "refId": "B"
-        },
-        {
-          "expr": "hikaricp_connections_max",
-          "legendFormat": "Max - {{application}}",
-          "refId": "C"
-        }
-      ],
-      "title": "🗄️ Database Connection Pool",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Garbage collection activity per second",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "color": { "mode": "palette-classic" }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 20 },
-      "id": 6,
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "targets": [
-        {
-          "expr": "sum(rate(jvm_gc_pause_seconds_count[5m])) by (job)",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
       ],
-      "title": "🗑️ GC Pauses /s",
+      "title": "Memory Usage (MB)",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "GC overhead as percentage of CPU time",
+      "description": "CPU usage percentage by service",
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
@@ -225,20 +152,51 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 20 },
-      "id": 7,
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 14 },
+      "id": 5,
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["last", "mean"] },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "targets": [
         {
-          "expr": "jvm_gc_overhead * 100",
+          "expr": "process_cpu_usage * 100",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
       ],
-      "title": "🗑️ GC Overhead (%)",
+      "title": "CPU Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Database connection pool status",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 23 },
+      "id": 6,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "hikaricp_connections_active",
+          "legendFormat": "{{application}} - Active",
+          "refId": "A"
+        },
+        {
+          "expr": "hikaricp_connections_idle",
+          "legendFormat": "{{application}} - Idle",
+          "refId": "B"
+        }
+      ],
+      "title": "DB Connections",
       "type": "timeseries"
     },
     {
@@ -251,11 +209,11 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 20 },
-      "id": 8,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 23 },
+      "id": 7,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "tooltip": { "mode": "multi" }
       },
       "targets": [
         {
@@ -264,38 +222,12 @@
           "refId": "A"
         }
       ],
-      "title": "🚨 Error Rate",
+      "title": "Error Rate",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Number of live threads per service",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": { "mode": "palette-classic" }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 28 },
-      "id": 9,
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "targets": [
-        {
-          "expr": "jvm_threads_live_threads",
-          "legendFormat": "{{job}}",
-          "refId": "A"
-        }
-      ],
-      "title": "🧵 Thread Count",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "CPU usage percentage per service",
+      "description": "Garbage collection overhead percentage",
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
@@ -305,141 +237,27 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 28 },
-      "id": 10,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 23 },
+      "id": 8,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "tooltip": { "mode": "multi" }
       },
       "targets": [
         {
-          "expr": "process_cpu_usage * 100",
+          "expr": "jvm_gc_overhead * 100",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
       ],
-      "title": "⚙️ CPU Usage (%)",
+      "title": "GC Overhead",
       "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Rate limiting decisions - allowed vs denied requests",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "color": { "mode": "palette-classic" }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "denied/s" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "allowed/s" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
-          }
-        ]
-      },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 28 },
-      "id": 11,
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "targets": [
-        {
-          "expr": "sum(rate(limits_requests_denied_total[1m]))",
-          "legendFormat": "denied/s",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(rate(limits_requests_allowed_total[1m]))",
-          "legendFormat": "allowed/s",
-          "refId": "B"
-        }
-      ],
-      "title": "🚦 Rate Limiting Decisions",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Service uptime in hours",
-      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 36 },
-      "id": 12,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "textMode": "value_and_name"
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "expr": "process_uptime_seconds / 3600",
-          "legendFormat": "{{job}}",
-          "refId": "A"
-        }
-      ],
-      "title": "⏱️ Uptime (hours)",
-      "type": "stat",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "h",
-          "decimals": 2,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 0.1 },
-              { "color": "green", "value": 1 }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Total requests in the last hour",
-      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 36 },
-      "id": 13,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "textMode": "value_and_name"
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "expr": "sum(increase(http_server_requests_seconds_count{uri!~\".*actuator.*\"}[1h])) by (job)",
-          "legendFormat": "{{job}}",
-          "refId": "A"
-        }
-      ],
-      "title": "📈 Total Requests (Last Hour)",
-      "type": "stat",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "blue", "value": null }
-            ]
-          }
-        }
-      }
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "description": "Memory usage as percentage of max heap",
-      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 36 },
-      "id": 14,
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 31 },
+      "id": 9,
       "options": {
         "orientation": "auto",
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
@@ -454,7 +272,7 @@
           "refId": "A"
         }
       ],
-      "title": "💾 Memory Usage (%)",
+      "title": "Memory Usage %",
       "type": "gauge",
       "fieldConfig": {
         "defaults": {
@@ -474,224 +292,56 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Top 5 slowest endpoints",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
-      "id": 15,
-      "options": {
-        "showHeader": true,
-        "sortBy": [{ "desc": true, "displayName": "Value" }]
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "expr": "topk(5, histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri!~\".*actuator.*\"}[5m])) by (le, uri, job)) * 1000)",
-          "legendFormat": "{{job}} - {{uri}}",
-          "refId": "A",
-          "format": "table",
-          "instant": true
-        }
-      ],
-      "title": "🐌 Slowest Endpoints (p95)",
-      "type": "table",
+      "description": "Rate limiting decisions - allowed vs denied",
       "fieldConfig": {
         "defaults": {
-          "custom": { "align": "auto", "displayMode": "auto" },
-          "unit": "ms"
-        }
-      },
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": { "Time": true },
-            "indexByName": {},
-            "renameByName": { "Value": "Response Time (ms)" }
-          }
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Connection pool usage percentage",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 },
-      "id": 16,
-      "options": {
-        "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "expr": "(hikaricp_connections_active / hikaricp_connections_max) * 100",
-          "legendFormat": "{{application}}",
-          "refId": "A"
-        }
-      ],
-      "title": "🗄️ DB Connection Pool Usage (%)",
-      "type": "gauge",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 70 },
-              { "color": "red", "value": 90 }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Classes loaded in JVM",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
+          "unit": "reqps",
           "color": { "mode": "palette-classic" }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 48 },
-      "id": 17,
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi" }
-      },
-      "targets": [
-        {
-          "expr": "jvm_classes_loaded_classes",
-          "legendFormat": "{{job}}",
-          "refId": "A"
-        }
-      ],
-      "title": "📚 Loaded Classes",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Total log events by level",
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 48 },
-      "id": 18,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "textMode": "value_and_name"
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "expr": "sum(logback_events_total{level=\"error\"}) by (job)",
-          "legendFormat": "{{job}} errors",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(logback_events_total{level=\"warn\"}) by (job)",
-          "legendFormat": "{{job}} warnings",
-          "refId": "B"
-        }
-      ],
-      "title": "📝 Log Events (Total)",
-      "type": "stat",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0
         },
         "overrides": [
           {
-            "matcher": { "id": "byRegexp", "options": ".*error.*" },
+            "matcher": { "id": "byName", "options": "denied" },
             "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
           },
           {
-            "matcher": { "id": "byRegexp", "options": ".*warn.*" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }]
+            "matcher": { "id": "byName", "options": "allowed" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
           }
         ]
-      }
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "HTTP status code distribution",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": { "mode": "palette-classic" }
-        },
-        "overrides": []
       },
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 48 },
-      "id": 19,
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 31 },
+      "id": 10,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
         "tooltip": { "mode": "multi" }
       },
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{uri!~\".*actuator.*\", status=~\"2..\"}[5m])) by (job)",
-          "legendFormat": "2xx - {{job}}",
+          "expr": "sum(rate(limits_requests_denied_total[1m]))",
+          "legendFormat": "denied",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{uri!~\".*actuator.*\", status=~\"4..\"}[5m])) by (job)",
-          "legendFormat": "4xx - {{job}}",
+          "expr": "sum(rate(limits_requests_allowed_total[1m]))",
+          "legendFormat": "allowed",
           "refId": "B"
-        },
-        {
-          "expr": "sum(rate(http_server_requests_seconds_count{uri!~\".*actuator.*\", status=~\"5..\"}[5m])) by (job)",
-          "legendFormat": "5xx - {{job}}",
-          "refId": "C"
         }
       ],
-      "title": "📊 HTTP Status Codes",
+      "title": "Rate Limiting",
       "type": "timeseries"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["spring", "observability", "microservices", "voting-system"],
-  "templating": {
-    "list": [
-      {
-        "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "definition": "label_values(up, job)",
-        "hide": 0,
-        "includeAll": true,
-        "multi": true,
-        "name": "service",
-        "options": [],
-        "query": {
-          "query": "label_values(up, job)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      }
-    ]
-  },
+  "tags": ["microservices", "essential"],
+  "templating": { "list": [] },
   "time": { "from": "now-15m", "to": "now" },
   "timepicker": {
-    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    "refresh_intervals": ["10s", "30s", "1m", "5m", "15m"]
   },
   "timezone": "browser",
-  "title": "Microservices Overview - Enhanced",
-  "uid": "microservices-overview-enhanced",
+  "title": "Microservices - Essential Metrics",
+  "uid": "microservices-essential",
   "version": 0
 }
