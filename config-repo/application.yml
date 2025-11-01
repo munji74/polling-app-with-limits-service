@@ -8,6 +8,15 @@ management:
     sampling:
       probability: 1.0
 
+# OpenTelemetry OTLP exporter defaults (override via env in each service as needed)
+otel:
+  exporter:
+    otlp:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+  resource:
+    attributes:
+      service.name: ${spring.application.name}
+
 logging:
   level:
     root: INFO

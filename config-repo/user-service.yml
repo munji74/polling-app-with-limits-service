@@ -1,8 +1,9 @@
 spring:
   application:
-    name: api-gateway
+    name: user-service
 
 security:
   jwt:
+    # Provide via environment/JVM arg in config-server environment; fallback handled in service
     secret: ${JWT_SECRET}
     issuer: polling-app-auth

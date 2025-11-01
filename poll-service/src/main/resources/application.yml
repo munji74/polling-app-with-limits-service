@@ -1,58 +1,44 @@
-# Disable Spring Cloud compatibility check
+server:
+  port: 8083
+
 spring:
-  cloud:
-    compatibility-verifier:
-      enabled: false
   application:
     name: poll-service
   config:
     import: optional:configserver:http://localhost:8888
+  # Fallback local datasource in case config-server is down
   datasource:
-    url: jdbc:mariadb://localhost:3306/polldb
-    username: app
-    password: app
+    url: ${DB_URL:jdbc:mariadb://localhost:3306/polldb}
+    username: ${DB_USERNAME:app}
+    password: ${DB_PASSWORD:app}
+    driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
-        format_sql: true
         dialect: org.hibernate.dialect.MariaDBDialect
-    show-sql: true
+        jdbc:
+          time_zone: Africa/Kampala
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+    time-zone: Africa/Kampala
 
-server:
-  port: 8082
-
-# Eureka Client Configuration
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka
-    fetch-registry: true
-    register-with-eureka: true
-  instance:
-    prefer-ip-address: false
-    hostname: localhost
-    instance-id: ${spring.application.name}:${server.port}
-
-# Actuator Endpoints
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      show-details: always
+        include: health,info,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
 
-# JWT Configuration
-app:
-  jwt:
-    secret: "L+tc2CP2cSx2R6y4D1S0rME2SLYeiq2NwqxYnhtGe0LSHNaxt4beEmQixlpQ7GoPz6+zYd2alMISFnP2ecNJSQ=="
-
-# Logging
-logging:
-  level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    com.example.pollservice: DEBUG
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+    registerWithEureka: true
+    fetchRegistry: true
+  instance:
+    preferIpAddress: true

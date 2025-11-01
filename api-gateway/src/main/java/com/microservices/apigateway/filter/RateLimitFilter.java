@@ -7,6 +7,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
@@ -20,8 +21,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
@@ -48,6 +47,13 @@ public class RateLimitFilter extends AbstractGatewayFilterFactory<RateLimitFilte
     private final CircuitBreaker circuitBreaker;
     private final boolean failOpen;
     private final Timer latencyTimer;
+
+    // Micrometer counters
+    private final Counter allowedCounter;
+    private final Counter deniedCounter;
+    private final Counter errorCounter;
+    private final Counter cacheHitCounter;
+    private final Counter cacheMissCounter;
 
     public RateLimitFilter(
             @Value("${limits.service.url:http://localhost:8082}") String limitsServiceUrl,
@@ -84,6 +90,13 @@ public class RateLimitFilter extends AbstractGatewayFilterFactory<RateLimitFilte
         this.circuitBreaker = CircuitBreaker.of("limitsService", cbConfig);
 
         this.latencyTimer = meterRegistry.timer("limits.request.latency");
+
+        // meters
+        this.allowedCounter = meterRegistry.counter("limits.requests.allowed");
+        this.deniedCounter = meterRegistry.counter("limits.requests.denied");
+        this.errorCounter = meterRegistry.counter("limits.requests.error");
+        this.cacheHitCounter = meterRegistry.counter("limits.cache.hits");
+        this.cacheMissCounter = meterRegistry.counter("limits.cache.misses");
     }
 
     @Override
@@ -99,20 +112,30 @@ public class RateLimitFilter extends AbstractGatewayFilterFactory<RateLimitFilte
             // check cache
             JsonNode cached = cache.getIfPresent(cacheKey);
             if (cached != null) {
+                cacheHitCounter.increment();
                 boolean allowed = cached.path("allowed").asBoolean(true);
                 int remaining = cached.path("remaining").asInt(-1);
+                int limit = cached.path("limit").asInt(-1);
+                int reset = cached.path("resetSeconds").asInt(-1);
                 if (!allowed) {
+                    deniedCounter.increment();
                     log.warn("Rate limit (cached) exceeded for {} on {}", key, path);
                     exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
                     exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
                     Map<String,Object> resp = Map.of("success", false, "message", "Rate limit exceeded");
                     byte[] bytes;
                     try { bytes = mapper.writeValueAsString(resp).getBytes(StandardCharsets.UTF_8); } catch (Exception e) { bytes = ("{\"success\":false,\"message\":\"Rate limit exceeded\"}").getBytes(StandardCharsets.UTF_8); }
+                    if (remaining >= 0) exchange.getResponse().getHeaders().add("X-Rate-Remaining", String.valueOf(remaining));
+                    if (limit >= 0) exchange.getResponse().getHeaders().add("X-Rate-Limit-Limit", String.valueOf(limit));
+                    if (reset >= 0) exchange.getResponse().getHeaders().add("X-Rate-Limit-Reset", String.valueOf(reset));
                     return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap(bytes)));
                 }
                 if (remaining >= 0) exchange.getResponse().getHeaders().add("X-Rate-Remaining", String.valueOf(remaining));
+                if (limit >= 0) exchange.getResponse().getHeaders().add("X-Rate-Limit-Limit", String.valueOf(limit));
+                if (reset >= 0) exchange.getResponse().getHeaders().add("X-Rate-Limit-Reset", String.valueOf(reset));
                 return chain.filter(exchange);
             }
+            cacheMissCounter.increment();
 
             Map<String,String> body = new HashMap<>();
             body.put("key", key);
@@ -131,24 +154,34 @@ public class RateLimitFilter extends AbstractGatewayFilterFactory<RateLimitFilte
             return call.flatMap(json -> {
                 latencyTimer.record(System.nanoTime() - start, TimeUnit.NANOSECONDS);
                 boolean allowed = json.path("allowed").asBoolean(true);
+                int remaining = json.path("remaining").asInt(-1);
+                int limit = json.path("limit").asInt(-1);
+                int reset = json.path("resetSeconds").asInt(-1);
                 if (!allowed) {
                     // cache deny and respond 429
                     cache.put(cacheKey, json);
+                    deniedCounter.increment();
                     log.warn("Rate limit exceeded for key {} on route {}", key, path);
                     exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
                     exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
                     Map<String,Object> resp = Map.of("success", false, "message", "Rate limit exceeded");
                     byte[] bytes;
                     try { bytes = mapper.writeValueAsString(resp).getBytes(StandardCharsets.UTF_8); } catch (Exception e) { bytes = ("{\"success\":false,\"message\":\"Rate limit exceeded\"}").getBytes(StandardCharsets.UTF_8); }
+                    if (remaining >= 0) exchange.getResponse().getHeaders().add("X-Rate-Remaining", String.valueOf(remaining));
+                    if (limit >= 0) exchange.getResponse().getHeaders().add("X-Rate-Limit-Limit", String.valueOf(limit));
+                    if (reset >= 0) exchange.getResponse().getHeaders().add("X-Rate-Limit-Reset", String.valueOf(reset));
                     return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap(bytes)));
                 }
-                int remaining = json.path("remaining").asInt(-1);
+                allowedCounter.increment();
                 if (remaining >= 0) exchange.getResponse().getHeaders().add("X-Rate-Remaining", String.valueOf(remaining));
+                if (limit >= 0) exchange.getResponse().getHeaders().add("X-Rate-Limit-Limit", String.valueOf(limit));
+                if (reset >= 0) exchange.getResponse().getHeaders().add("X-Rate-Limit-Reset", String.valueOf(reset));
                 // cache positive response (so repeated calls in TTL don't hit limits-service)
                 cache.put(cacheKey, json);
                 return chain.filter(exchange);
             }).onErrorResume(ex -> {
                 // metrics increment could be added here
+                errorCounter.increment();
                 log.error("Limits service check failed: {}", ex.toString());
                 if (failOpen) {
                     log.warn("Fail-open enabled: allowing request despite limits-service failure");

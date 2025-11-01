@@ -39,7 +39,7 @@
         <!-- Edge & Config -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-gateway</artifactId>
+            <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
@@ -60,7 +60,7 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-        <!-- In-memory rate limiting (if using Bucket4j + Caffeine) -->
+        <!-- In-memory rate limiting support (Caffeine cache) -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
@@ -96,8 +96,6 @@
             <artifactId>resilience4j-circuitbreaker</artifactId>
             <version>2.0.2</version>
         </dependency>
-
-        <!-- Reactor Netty is provided by Spring Boot dependency management; do not declare an explicit version here -->
 
         <!-- Observability -->
         <dependency>

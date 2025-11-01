@@ -31,8 +31,8 @@ public class JwtService {
 
     @PostConstruct
     private void init() {
-        if (secret == null || secret.isBlank() || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
-            throw new IllegalStateException("security.jwt.secret must be provided and at least 32 bytes long (set in config server or env). Please set JWT_SECRET env or configure in config-repo.");
+        if (secret == null || secret.isBlank() || secret.getBytes(StandardCharsets.UTF_8).length < 64) {
+            throw new IllegalStateException("security.jwt.secret must be provided and at least 64 bytes long for HS512. Please set JWT_SECRET env or configure in config-repo.");
         }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }

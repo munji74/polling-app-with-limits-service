@@ -5,12 +5,19 @@ spring:
     url: jdbc:mariadb://localhost:3306/polldb
     username: app
     password: app
+    driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
-
-jwt:
-  secret: ${JWT_SECRET:change-me}   # MUST match auth-service
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+        jdbc:
+          time_zone: Africa/Kampala
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+    time-zone: Africa/Kampala
 
 management:
   endpoints:
