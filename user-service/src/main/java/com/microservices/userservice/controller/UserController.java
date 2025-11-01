@@ -1,15 +1,13 @@
 package com.microservices.userservice.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.microservices.userservice.payload.auth.UserDetailsResponse;
 import com.microservices.userservice.payload.user.UserDetailsRequest;
 import com.microservices.userservice.service.UserService;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/user")
@@ -32,6 +30,20 @@ public class UserController {
 	@PostMapping("/get-user-details/{id}")
 	public UserDetailsResponse getUserDetailsById(@PathVariable Long id) {
 		return userService.getUserDetails(id);
+	}
+
+	// New: Get current user by X-User-Id header (used when gateway forwards user id)
+	@GetMapping("/me")
+	public UserDetailsResponse getCurrentUser(@RequestHeader(name = "X-User-Id", required = false) String userIdHeader) {
+		if (userIdHeader == null || userIdHeader.isBlank()) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing X-User-Id header");
+		}
+		try {
+			Long id = Long.valueOf(userIdHeader);
+			return userService.getUserDetails(id);
+		} catch (NumberFormatException ex) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid X-User-Id header");
+		}
 	}
 
 }
