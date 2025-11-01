@@ -34,6 +34,8 @@ management:
     prometheus:
       enabled: true
   metrics:
+    tags:
+      application: ${spring.application.name}
     distribution:
       percentiles-histogram:
         http:
@@ -43,10 +45,8 @@ management:
     enabled: true
     sampling:
       probability: 1.0
-  otlp:
-    tracing:
-      # Do not force a default; let env/config-server provide this to avoid connection refused when no collector
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:}
+# Note: OTLP exporter endpoint intentionally not set here to avoid creating the exporter when undefined.
+# To enable OTLP export, use the 'otel' profile or set management.otlp.tracing.endpoint via environment.
 
 logging:
   pattern:

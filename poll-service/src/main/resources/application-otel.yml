@@ -1,0 +1,11 @@
+# Activate with: --spring.profiles.active=otel or SPRING_PROFILES_ACTIVE=otel
+# Exports traces to local OTLP HTTP collector (OpenTelemetry)
+management:
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+

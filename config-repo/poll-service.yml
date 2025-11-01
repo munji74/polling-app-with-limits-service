@@ -27,13 +27,16 @@ management:
   endpoint:
     prometheus:
       enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
   tracing:
     enabled: true
     sampling:
       probability: 1.0
   otlp:
     tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:}
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:#{null}}
 
 logging:
   pattern:

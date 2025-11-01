@@ -32,10 +32,10 @@ spring:
 
 logging:
   level:
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
     org.hibernate.SQL: info
   pattern:
-    level: "%5p [${spring.application.name:},${X-B3-TraceId:-},${X-B3-SpanId:-}]"
+    level: "%5p [${spring.application.name:},trace_id=%mdc{trace_id:-},span_id=%mdc{span_id:-}]"
 
 eureka:
   client:
@@ -65,10 +65,24 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,env,loggers
+        include: health,info,prometheus,metrics,env,loggers
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
   tracing:
     sampling:
       probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
 
 app:
   cors:
