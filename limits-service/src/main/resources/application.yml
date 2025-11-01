@@ -12,13 +12,35 @@ management:
     web:
       exposure:
         include: health,info,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        limits.request: true
+      slo:
+        http.server.requests: 50ms,100ms,250ms,500ms,1s,2s
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
+
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
   instance:
-        prefer-ip-address: false
-        hostname: localhost
-        instance-id: ${spring.application.name}:${server.port}
-
+    prefer-ip-address: false
+    hostname: localhost
+    instance-id: ${spring.application.name}:${server.port}

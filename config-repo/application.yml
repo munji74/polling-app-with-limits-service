@@ -4,19 +4,25 @@ management:
     web:
       exposure:
         include: health,info,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
   tracing:
     sampling:
       probability: 1.0
+  otlp:
+    tracing:
+      # Use HTTP endpoint by default; override via env OTEL_EXPORTER_OTLP_ENDPOINT
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
 
-# OpenTelemetry OTLP exporter defaults (override via env in each service as needed)
-otel:
-  exporter:
-    otlp:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
-  resource:
-    attributes:
-      service.name: ${spring.application.name}
+# Identify service in traces
+management.observations.key-values.application=${spring.application.name}
 
+# Optional: W3C trace context is default; keep headers propagated via Spring Cloud
+
+# Logging with trace/span ids
 logging:
   level:
     root: INFO
+  pattern:
+    level: "%5p [${spring.application.name},traceId=%X{traceId:-},spanId=%X{spanId:-}]"

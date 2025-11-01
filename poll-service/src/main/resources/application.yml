@@ -30,9 +30,27 @@ management:
     web:
       exposure:
         include: health,info,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
   tracing:
+    enabled: true
     sampling:
       probability: 1.0
+  otlp:
+    tracing:
+      # Do not force a default; let env/config-server provide this to avoid connection refused when no collector
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:}
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},traceId=%mdc{traceId:-},spanId=%mdc{spanId:-}]"
 
 eureka:
   client:

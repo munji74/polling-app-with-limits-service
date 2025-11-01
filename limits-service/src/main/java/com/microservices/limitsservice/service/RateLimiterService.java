@@ -1,11 +1,15 @@
 package com.microservices.limitsservice.service;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class RateLimiterService {
@@ -46,10 +50,50 @@ public class RateLimiterService {
     }
 
     private final ConcurrentMap<String, TokenBucket> buckets = new ConcurrentHashMap<>();
+    private final MeterRegistry meterRegistry;
+
+    public RateLimiterService(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+    }
 
     public ConsumeResult tryConsume(String key, String route, int weight, int replenishRate, int burstCapacity) {
         String cacheKey = Objects.toString(key, "") + "::" + Objects.toString(route, "");
         TokenBucket bucket = buckets.computeIfAbsent(cacheKey, k -> new TokenBucket(replenishRate, burstCapacity));
-        return bucket.tryConsume(weight);
+
+        long start = System.nanoTime();
+        ConsumeResult result = bucket.tryConsume(weight);
+        long duration = System.nanoTime() - start;
+
+        // Low-cardinality tags
+        String userType = key != null && key.startsWith("user:") ? "user" : "anon";
+        String routeGroup = route != null && route.startsWith("/api/") ? "api" : "other";
+
+        // Timers for latency
+        Timer.builder("limits.request")
+                .description("Latency of limits checks")
+                .tag("routeGroup", routeGroup)
+                .tag("userType", userType)
+                .tag("allowed", String.valueOf(result.allowed()))
+                .register(meterRegistry)
+                .record(duration, TimeUnit.NANOSECONDS);
+
+        // Counters for decisions
+        if (result.allowed()) {
+            Counter.builder("limits.requests.allowed")
+                    .description("Count of allowed requests by limits service")
+                    .tag("routeGroup", routeGroup)
+                    .tag("userType", userType)
+                    .register(meterRegistry)
+                    .increment();
+        } else {
+            Counter.builder("limits.requests.denied")
+                    .description("Count of denied requests by limits service")
+                    .tag("routeGroup", routeGroup)
+                    .tag("userType", userType)
+                    .register(meterRegistry)
+                    .increment();
+        }
+
+        return result;
     }
 }

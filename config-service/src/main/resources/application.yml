@@ -38,10 +38,11 @@ eureka:
     lease-renewal-interval-in-seconds: 30
     lease-expiration-duration-in-seconds: 90
 
-# Actuator Configuration
+# Actuator + Micrometer/Tracing Configuration
 management:
   endpoints:
     web:
+      base-path: /actuator
       exposure:
         include: health,info,metrics,prometheus,refresh
   endpoint:
@@ -59,13 +60,14 @@ management:
   otlp:
     tracing:
       endpoint: http://localhost:4318/v1/traces
+  observations:
+    annotations:
+      enabled: true
 
 # Logging
 logging:
   level:
     root: INFO
-    com.votingsystem: DEBUG
-    org.springframework.cloud.config: DEBUG
+    org.springframework.cloud.config: INFO
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n"
