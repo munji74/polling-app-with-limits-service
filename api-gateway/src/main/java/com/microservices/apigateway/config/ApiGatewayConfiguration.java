@@ -26,6 +26,11 @@ public class ApiGatewayConfiguration {
                         // dev: route directly to local user-service (configurable)
                         .uri(userServiceBaseUrl))
 
+                .route("user-me", r -> r.path("/api/auth/me")
+                        .filters(f -> f.rewritePath("/api/auth/me", "/user/me")
+                                .filter(authFilter.apply(new AuthFilter.Config())))
+                        .uri(userServiceBaseUrl))
+
                 // Everything else to user-service (WITH auth filter + rate limit)
                 .route("user-protected", r -> r.path("/api/users/**")
                         .filters(f -> f.rewritePath("/api/users/(?<remaining>.*)", "/user/${remaining}")
