@@ -5,6 +5,12 @@
     <file url="file://$PROJECT_DIR$/config-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/limits-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/naming-server/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/poll-Backend/api-gateway/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/poll-Backend/config-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/poll-Backend/limits-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/poll-Backend/naming-server/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/poll-Backend/poll-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/poll-Backend/user-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/poll-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/template-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/user-service/src/main/java" charset="UTF-8" />
