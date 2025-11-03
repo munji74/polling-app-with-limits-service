@@ -19,6 +19,8 @@ export default function PollDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user } = useAuth();
+  // New: avoid toggling options while voting round-trip is in flight
+  const [submitting, setSubmitting] = useState(false);
 
   const totalVotes = useMemo(
     () => (poll?.totalVotes ?? (poll?.options?.reduce((s, o) => s + (o.votes || 0), 0) || 0)),
@@ -47,19 +49,59 @@ export default function PollDetail() {
     load();
   }, [id]);
 
+  // Keep local selection aligned with server once vote recorded
+  useEffect(() => {
+    if (poll?.hasVoted && poll?.userOptionId) {
+      setSelected(poll.userOptionId);
+    }
+  }, [poll?.hasVoted, poll?.userOptionId]);
+
+  // Effective selection: once voted, always reflect server's recorded option
+  const effectiveSelected = useMemo(() => {
+    if (poll?.hasVoted && poll?.userOptionId) return poll.userOptionId;
+    return selected;
+  }, [poll?.hasVoted, poll?.userOptionId, selected]);
+
   const submitVote = async () => {
-    if (!selected) return;
+    if (!effectiveSelected) return;
+    if (expired || poll?.hasVoted) return;
+    setSubmitting(true);
+
+    // Optimistic lock-in to prevent any visual flip before server reply
+    setPoll(prev => prev ? {
+      ...prev,
+      hasVoted: true,
+      userOptionId: effectiveSelected,
+      // best-effort optimistic count update; will be reconciled on refetch
+      totalVotes: (prev.totalVotes ?? (prev.options?.reduce((s, o) => s + (o.votes || 0), 0) || 0)) + 1,
+      options: prev.options?.map(o => o.id === effectiveSelected ? { ...o, votes: (o.votes || 0) + 1 } : o)
+    } : prev);
+
     try {
-      await api.post(`/api/polls/${id}/votes`, { optionId: selected });
+      await api.post(`/api/polls/${id}/votes`, { optionId: effectiveSelected });
       const { data } = await api.get(`/api/polls/${id}`);
-      setPoll(data);
+      // If backend omits userOptionId, preserve our selected as the recorded one
+      setPoll(data?.userOptionId ? data : { ...data, hasVoted: true, userOptionId: effectiveSelected });
+      if (data?.userOptionId) setSelected(data.userOptionId);
+      else setSelected(effectiveSelected);
     } catch (err) {
       if (err?.response?.status === 409) {
-        setPoll(p => p ? { ...p, hasVoted: true, userOptionId: p.userOptionId ?? selected } : p);
-      } else if (err?.response?.status === 409 || err?.response?.status === 403) {
+        // Already voted – lock UI to the recorded user option if present
+        setPoll(p => p ? { ...p, hasVoted: true, userOptionId: p.userOptionId ?? effectiveSelected } : p);
+        setSelected(prev => (poll?.userOptionId ?? effectiveSelected ?? prev));
+      } else if (err?.response?.status === 403) {
+        setError('Voting not allowed for this poll');
       } else {
         setError('Failed to submit vote');
+        // Rollback optimistic change on unknown error by refetching
+        try {
+          const { data } = await api.get(`/api/polls/${id}`);
+          setPoll(data);
+          if (data?.userOptionId) setSelected(data.userOptionId);
+        } catch { /* ignore */ }
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -86,6 +128,7 @@ export default function PollDetail() {
   if (!poll) return null;
 
   const alreadyVoted = !!poll.hasVoted;
+  const disableChoice = expired || !user || alreadyVoted || submitting;
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-xl border shadow-sm p-6">
@@ -130,18 +173,18 @@ export default function PollDetail() {
       {/* Voting Options */}
       <div className="space-y-3 mb-6">
         {poll.options?.map((opt) => {
-          const isSelected = selected === opt.id;
+          const isSelected = effectiveSelected === opt.id;
           const percentage = totalVotes > 0 ? ((opt.votes || 0) / totalVotes) * 100 : 0;
 
           return (
             <label
               key={opt.id}
-              className={`block p-4 rounded-lg border-2 cursor-pointer transition-all ${
+              className={`block p-4 rounded-lg border-2 transition-all ${
                 isSelected
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               } ${
-                (expired || !user || alreadyVoted) ? 'opacity-80 cursor-not-allowed' : ''
+                disableChoice ? 'opacity-80 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -174,7 +217,7 @@ export default function PollDetail() {
                 value={opt.id}
                 checked={isSelected}
                 onChange={() => setSelected(opt.id)}
-                disabled={expired || !user || alreadyVoted}
+                disabled={disableChoice}
                 className="hidden"
               />
             </label>
@@ -186,14 +229,14 @@ export default function PollDetail() {
       <div className="flex items-center justify-between pt-4 border-t">
         <div className="flex items-center gap-3">
           <button
-            disabled={!user || expired || !selected || alreadyVoted}
+            disabled={!user || expired || !effectiveSelected || alreadyVoted || submitting}
             onClick={submitVote}
             className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            {alreadyVoted ? 'Already Voted' : 'Cast Vote'}
+            {alreadyVoted ? 'Already Voted' : (submitting ? 'Submitting…' : 'Cast Vote')}
           </button>
 
           {!user && (
@@ -203,9 +246,9 @@ export default function PollDetail() {
             </div>
           )}
 
-          {selected && !alreadyVoted && user && !expired && (
+          {effectiveSelected && !alreadyVoted && user && !expired && (
             <span className="text-sm text-gray-600">
-              Selected: <strong>{poll.options?.find(opt => opt.id === selected)?.text}</strong>
+              Selected: <strong>{poll.options?.find(opt => opt.id === effectiveSelected)?.text}</strong>
             </span>
           )}
         </div>

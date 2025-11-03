@@ -1,5 +1,6 @@
 package com.microservices.apigateway.config;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 
@@ -20,11 +21,21 @@ public class RouteValidator {
     // True if the path REQUIRES a token
     public Predicate<ServerHttpRequest> isSecured = request -> {
         final String path = request.getURI().getPath();
-        return OPEN_API_ENDPOINTS.stream().noneMatch(pattern -> {
+        final HttpMethod httpMethod = request.getMethod();
+        final String method = httpMethod != null ? httpMethod.name() : "";
+
+        // Public read-only access to polls (frontend shows polls to anonymous users)
+        if (HttpMethod.GET.name().equalsIgnoreCase(method) && path.startsWith("/api/polls")) {
+            return false; // open
+        }
+
+        // Open actuator & auth endpoints
+        boolean isOpen = OPEN_API_ENDPOINTS.stream().anyMatch(pattern -> {
             if (pattern.endsWith("/")) {
                 return path.startsWith(pattern);
             }
             return path.equals(pattern);
         });
+        return !isOpen;
     };
 }

@@ -8,6 +8,7 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; // added
 
 @Configuration
 public class ApiGatewayConfiguration {
@@ -31,6 +32,18 @@ public class ApiGatewayConfiguration {
                                 .filter(authFilter.apply(new AuthFilter.Config())))
                         .uri(userServiceBaseUrl))
 
+                // Public READ-ONLY access to polls (anonymous allowed)
+                .route("poll-public-read", r -> r
+                        .path("/api/polls", "/api/polls/**")
+                        .and()
+                        .method(HttpMethod.GET)
+                        .filters(f -> f
+                                .filter(rateLimitFilter.apply(new RateLimitFilter.Config()))
+                                // even for open endpoints, enrich identity if token present
+                                .filter(authFilter.apply(new AuthFilter.Config()))
+                        )
+                        .uri("lb://poll-service"))
+
                 // Everything else to user-service (WITH auth filter + rate limit)
                 .route("user-protected", r -> r.path("/api/users/**")
                         .filters(f -> f.rewritePath("/api/users/(?<remaining>.*)", "/user/${remaining}")
@@ -38,7 +51,7 @@ public class ApiGatewayConfiguration {
                                 .filter(authFilter.apply(new AuthFilter.Config())))
                         .uri(userServiceBaseUrl))
 
-                // Example: poll-service protected routes (apply rate limiting and auth)
+                // Poll-service protected routes (POST/PUT/DELETE etc.)
                 .route("poll-protected", r -> r.path("/api/polls/**")
                         .filters(f -> f.filter(rateLimitFilter.apply(new RateLimitFilter.Config()))
                                 .filter(authFilter.apply(new AuthFilter.Config())))

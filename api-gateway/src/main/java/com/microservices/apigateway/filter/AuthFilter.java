@@ -88,6 +88,27 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                     log.warn("Token validation failed for request {}: {}", request.getURI(), e.getMessage());
                     return unauthorizedJson(exchange, "Invalid or expired token");
                 }
+            } else {
+                // Open endpoint: if Authorization header is present, try to enrich with identity, but never block.
+                String auth = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+                if (auth != null && auth.startsWith("Bearer ")) {
+                    String token = auth.substring(7);
+                    try {
+                        Claims claims = jwtUtil.validateAndGetClaims(token);
+                        String sub   = claims.getSubject();
+                        String email = (String) claims.get("email");
+                        String roles = (String) claims.get("roles");
+                        var mutated = request.mutate()
+                                .header("X-User-Id", sub == null ? "" : sub)
+                                .header("X-User-Email", email == null ? "" : email)
+                                .header("X-User-Roles", roles == null ? "" : roles)
+                                .build();
+                        return chain.filter(exchange.mutate().request(mutated).build());
+                    } catch (Exception e) {
+                        // don't fail open endpoints due to token issues; just continue without identity
+                        log.debug("Ignoring invalid token on open endpoint {}: {}", request.getURI(), e.getMessage());
+                    }
+                }
             }
 
             return chain.filter(exchange);

@@ -30,10 +30,9 @@ public class TrustedHeaderAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        String p = request.getRequestURI();
-        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true;
-        // public GETs on polls are allowed
-        return "GET".equalsIgnoreCase(request.getMethod()) && p.startsWith("/api/polls");
+        String method = request.getMethod();
+        // Only skip CORS preflight; otherwise always allow the filter to set Authentication if headers exist.
+        return "OPTIONS".equalsIgnoreCase(method);
     }
 
     @Override
