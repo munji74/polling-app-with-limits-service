@@ -329,6 +329,84 @@
       ],
       "title": "Rate Limiting",
       "type": "timeseries"
+    },
+    {
+      "type": "row",
+      "title": "Key User Actions",
+      "id": 11,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 38 },
+      "collapsed": false
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Request rate for common user actions measured at the upstream services (not the Gateway)",
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 39 },
+      "id": 12,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["last", "mean"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        { "expr": "sum(rate(http_server_requests_seconds_count{job=\"user-service\",method=\"POST\",uri=\"/auth/sign-in\"}[1m]))", "legendFormat": "sign-in", "refId": "A" },
+        { "expr": "sum(rate(http_server_requests_seconds_count{job=\"user-service\",method=\"POST\",uri=\"/auth/sign-up\"}[1m]))", "legendFormat": "sign-up", "refId": "B" },
+        { "expr": "sum(rate(http_server_requests_seconds_count{job=\"user-service\",uri=~\"/auth/logout.*\"}[1m]))", "legendFormat": "logout", "refId": "C" },
+        { "expr": "sum(rate(http_server_requests_seconds_count{job=\"poll-service\",method=\"POST\",uri=\"/api/polls\"}[1m]))", "legendFormat": "create-poll", "refId": "D" },
+        { "expr": "sum(rate(http_server_requests_seconds_count{job=\"poll-service\",method=\"GET\",uri=\"/api/polls\"}[1m]))", "legendFormat": "list-polls", "refId": "E" },
+        { "expr": "sum(rate(http_server_requests_seconds_count{job=\"poll-service\",method=\"GET\",uri=~\"/api/polls/.+\"}[1m]))", "legendFormat": "poll-details", "refId": "F" },
+        { "expr": "sum(rate(http_server_requests_seconds_count{job=\"poll-service\",method=\"POST\",uri=~\"/api/polls/.+/vote\"}[1m]))", "legendFormat": "vote", "refId": "G" }
+      ],
+      "title": "User Actions - Request Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Count of user actions over the last 15 minutes at the upstream services",
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 39 },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        { "expr": "round(sum(increase(http_server_requests_seconds_count{job=\"user-service\",method=\"POST\",uri=\"/auth/sign-in\"}[15m])))", "legendFormat": "sign-in (15m)", "refId": "A" },
+        { "expr": "round(sum(increase(http_server_requests_seconds_count{job=\"user-service\",method=\"POST\",uri=\"/auth/sign-up\"}[15m])))", "legendFormat": "sign-up (15m)", "refId": "B" },
+        { "expr": "round(sum(increase(http_server_requests_seconds_count{job=\"user-service\",uri=~\"/auth/logout.*\"}[15m])))", "legendFormat": "logout (15m)", "refId": "C" },
+        { "expr": "round(sum(increase(http_server_requests_seconds_count{job=\"poll-service\",method=\"POST\",uri=\"/api/polls\"}[15m])))", "legendFormat": "create-poll (15m)", "refId": "D" },
+        { "expr": "round(sum(increase(http_server_requests_seconds_count{job=\"poll-service\",method=\"GET\",uri=\"/api/polls\"}[15m])))", "legendFormat": "list-polls (15m)", "refId": "E" },
+        { "expr": "round(sum(increase(http_server_requests_seconds_count{job=\"poll-service\",method=\"GET\",uri=~\"/api/polls/.+\"}[15m])))", "legendFormat": "poll-details (15m)", "refId": "F" },
+        { "expr": "round(sum(increase(http_server_requests_seconds_count{job=\"poll-service\",method=\"POST\",uri=~\"/api/polls/.+/vote\"}[15m])))", "legendFormat": "vote (15m)", "refId": "G" }
+      ],
+      "title": "User Actions - Count (last 15m)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Top endpoints by request rate across services (helps verify exact 'uri' label values)",
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } } },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 48 },
+      "id": 14,
+      "options": {
+        "showHeader": true,
+        "sortBy": [ { "displayName": "Value", "desc": true } ]
+      },
+      "targets": [
+        {
+          "expr": "topk(20, sum(rate(http_server_requests_seconds_count[5m])) by (job, method, uri))",
+          "legendFormat": "{{job}} {{method}} {{uri}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Endpoints (5m)",
+      "type": "table"
     }
   ],
   "refresh": "10s",

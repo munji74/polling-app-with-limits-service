@@ -1,0 +1,16 @@
+com\example\pollservice\poll\PollOptionRepository.class
+com\example\pollservice\poll\Poll.class
+com\example\pollservice\poll\PollService.class
+com\example\pollservice\poll\VoteRepository.class
+com\example\pollservice\PollServiceApplication.class
+com\example\pollservice\api\dto\PollResponse$OptionDto.class
+com\example\pollservice\security\SecurityConfig.class
+com\example\pollservice\api\dto\VoteRequest.class
+com\example\pollservice\security\TrustedHeaderAuthFilter.class
+com\example\pollservice\poll\PollRepository.class
+com\example\pollservice\api\ApiErrorHandler.class
+com\example\pollservice\poll\PollOption.class
+com\example\pollservice\api\dto\CreatePollRequest.class
+com\example\pollservice\poll\Vote.class
+com\example\pollservice\api\PollController.class
+com\example\pollservice\api\dto\PollResponse.class

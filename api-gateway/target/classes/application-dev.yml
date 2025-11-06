@@ -1,0 +1,52 @@
+server:
+  port: 8765
+
+services:
+  user-service-base-url: http://localhost:8000
+
+apigateway:
+  logging:
+    enabled: true
+    exclude-prefixes: /actuator,/actuator/metrics,/actuator/prometheus
+
+limits:
+  service:
+    url: http://localhost:8084
+    timeout-ms: 250
+    fail-open: true
+    cache-ttl-ms: 500
+
+security:
+  jwt:
+    issuer: polling-app-auth
+    secret: L+tc2CP2cSx2R6y4D1S0rME2SLYeiq2NwqxYnhtGe0LSHNaxt4beEmQixlpQ7GoPz6+zYd2alMISFnP2ecNJSQ==
+    secret-base64: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
+    metrics:
+      export:
+        enabled: true
+        endpoint: http://localhost:4318/v1/metrics
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+
+logging:
+  level:
+    root: INFO
+  pattern:
+    level: "%5p [${spring.application.name:},traceId=%X{traceId:-},spanId=%X{spanId:-}]"

@@ -1,0 +1,98 @@
+# language: yaml
+# File: user-service/src/main/resources/application-dev.yml
+server:
+  port: 8000
+
+spring:
+  application:
+    name: user-service
+  main:
+    allow-circular-references: true
+    lazy-initialization: true
+  datasource:
+    url: jdbc:mariadb://localhost:3306/authdb
+    username: app
+    password: app
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+        jdbc:
+          time_zone: Africa/Kampala
+    hibernate:
+      ddl-auto: update
+  sql:
+    init:
+      mode: always
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+    time-zone: Africa/Kampala
+
+logging:
+  level:
+    org.springframework.security: INFO
+    org.hibernate.SQL: info
+  pattern:
+    level: "%5p [${spring.application.name:},trace_id=%mdc{trace_id:-},span_id=%mdc{span_id:-}]"
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+
+resilience4j:
+  retry:
+    instances:
+      sample-api:
+        maxRetryAttempts: 5
+        waitDuration: 1s
+        enableExponentialBackoff: true
+  ratelimiter:
+    instances:
+      default:
+        limitForPeriod: 2
+        limitRefreshPeriod: 10s
+  bulkhead:
+    instances:
+      default:
+        maxConcurrentCalls: 10
+      sample-api:
+        maxConcurrentCalls: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,env,loggers
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
+
+app:
+  cors:
+    allowedOrigins: "*"
+  jwt:
+    secret: "L+tc2CP2cSx2R6y4D1S0rME2SLYeiq2NwqxYnhtGe0LSHNaxt4beEmQixlpQ7GoPz6+zYd2alMISFnP2ecNJSQ=="
+    expires-in: 3600000
+
+security:
+  jwt:
+    # Keep access-exp-seconds used by JwtService; value set to 3600 seconds (1 hour)
+    secret: "L+tc2CP2cSx2R6y4D1S0rME2SLYeiq2NwqxYnhtGe0LSHNaxt4beEmQixlpQ7GoPz6+zYd2alMISFnP2ecNJSQ=="
+    access-exp-seconds: 3600

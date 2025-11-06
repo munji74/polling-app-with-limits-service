@@ -1,0 +1,15 @@
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\api\ApiErrorHandler.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\api\dto\CreatePollRequest.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\api\dto\PollResponse.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\api\dto\VoteRequest.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\api\PollController.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\poll\Poll.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\poll\PollOption.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\poll\PollOptionRepository.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\poll\PollRepository.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\poll\PollService.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\poll\Vote.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\poll\VoteRepository.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\PollServiceApplication.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\security\SecurityConfig.java
+C:\Users\Alala\projects\polling-app-with-limits-service\poll-service\src\main\java\com\example\pollservice\security\TrustedHeaderAuthFilter.java
