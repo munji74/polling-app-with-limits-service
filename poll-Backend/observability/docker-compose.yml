@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   prometheus:
     image: prom/prometheus:latest
@@ -14,6 +12,7 @@ services:
   tempo:
     image: grafana/tempo:latest
     container_name: tempo
+    user: "0:0" # run as root to ensure write perms on mounted volume in Windows/WSL
     restart: unless-stopped
     command: ["-config.file=/etc/tempo.yaml"]
     ports:
@@ -23,6 +22,11 @@ services:
     volumes:
       - ./tempo/tempo.yaml:/etc/tempo.yaml:ro
       - tempo_data:/tmp/tempo
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   grafana:
     image: grafana/grafana:latest

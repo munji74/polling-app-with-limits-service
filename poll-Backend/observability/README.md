@@ -1,74 +1,79 @@
-# Observability stack (Prometheus + Grafana)
+# Observability stack (Prometheus + Tempo + Grafana)
 
-This folder contains a ready-to-run Prometheus + Grafana stack for your microservices.
+This folder runs metrics and tracing for the project.
 
-What you get:
-- Prometheus scraping metrics from:
-  - api-gateway (8765)
-  - user-service (8000)
-  - poll-service (8083)
-  - limits-service (8084)
-  - naming-server (Eureka, 8761)
-- Grafana pre-provisioned with a Prometheus datasource and a "Microservices Overview" dashboard.
+Services and ports (from your host):
+- Grafana UI: http://localhost:3000 (admin / admin)
+- Prometheus UI/API: http://localhost:9090
+- Tempo API (no UI): http://localhost:3200
+  - Readiness: GET /ready
+  - Status: GET /status
+  - Metrics: GET /metrics
+  - Get a trace (after one exists): GET /api/traces/{traceId}
+  - OTLP ingest (from apps): gRPC on 4317, HTTP on 4318
 
-## Prerequisites
-- Docker Desktop installed and running on Windows
-- Your services running locally and exposing `/actuator/prometheus` (Spring Boot)
-  - Add dependencies:
-    - `org.springframework.boot:spring-boot-starter-actuator`
-    - `io.micrometer:micrometer-registry-prometheus`
-  - Add properties:
-    - `management.endpoints.web.exposure.include=health,info,prometheus`
-    - `management.endpoint.prometheus.enabled=true`
+## Start/stop
 
-## How to run
+```cmd
+cd observability
+docker compose up -d
 
-Open Command Prompt and run:
+REM Check containers
+docker compose ps
 
+REM Show logs
+docker compose logs --tail=100 tempo
 ```
-cd C:\Users\Alala\projects\polling-app-with-limits-service\observability
+
+## Verifying Tempo
+
+```cmd
+REM 200 OK when ready
+curl -i http://localhost:3200/ready
+
+REM Status payload
+curl http://localhost:3200/status
+
+REM Endpoint is alive (returns 400 because body is empty, which is fine)
+curl -i -X POST http://localhost:4318/v1/traces -H "Content-Type: application/json" -d "{\"resourceSpans\":[]}"
+```
+
+Note: Seeing "404 page not found" at http://localhost:3200/ is expected. Tempo exposes APIs, not a homepage. Use Grafana to browse traces.
+
+## Using Grafana with Tempo and Prometheus
+
+1. Open Grafana at http://localhost:3000 (admin/admin).
+2. Data sources are auto-provisioned:
+   - Prometheus (default) → http://prometheus:9090
+   - Tempo → http://tempo:3200
+3. Explore → switch to Tempo data source → search for traces.
+4. Build dashboards with PromQL from Prometheus.
+
+## Configure your apps (Spring Boot example)
+
+Set environment variables when running the service:
+
+```cmd
+set OTEL_SERVICE_NAME=poll-service
+set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+set OTEL_TRACES_EXPORTER=otlp
+REM If exposing metrics for Prometheus scraping, ensure /actuator/prometheus is enabled.
+```
+
+Prometheus scrapes metrics from your service; Tempo receives traces from the OTLP exporter.
+
+## Troubleshooting
+
+- 404 at / (http://localhost:3200/): normal; use /ready, /status, /metrics or Grafana UI.
+- Permission denied for Tempo storage: we run Tempo as root and use a named volume; if issues persist, recreate volume:
+
+```cmd
+cd observability
+docker compose down
+docker volume rm observability_tempo_data
 docker compose up -d
 ```
 
-Check containers:
-```
-docker compose ps
-```
-
-Open UIs:
-- Prometheus: http://localhost:9090 (Targets page: http://localhost:9090/targets)
-- Grafana: http://localhost:3000 (login admin/admin)
-
-The Grafana dashboard "Microservices Overview" is auto-loaded (home ➜ Dashboards).
-
-## Adjusting targets
-Prometheus uses `host.docker.internal` to scrape Windows-host services from containers. If your ports differ, update `prometheus/prometheus.yml` accordingly and run:
-```
-docker compose restart prometheus
-```
-
-## Verify metrics quickly
-Use curl from Windows:
-```
-curl -s http://localhost:8765/actuator/prometheus > NUL
-curl -s http://localhost:8084/actuator/prometheus > NUL
-curl -s http://localhost:8083/actuator/prometheus > NUL
-curl -s http://localhost:8000/actuator/prometheus > NUL
-```
-Then open Prometheus ➜ Status ➜ Targets and ensure all show `UP`.
-
-## Troubleshooting
-- Target DOWN in Prometheus:
-  - Confirm service is running and `/actuator/prometheus` returns 200
-  - Confirm the port in `prometheus.yml` matches your service
-- Grafana shows no data:
-  - Wait ~10–20 seconds after starting containers
-  - Ensure Prometheus targets are UP
-- Naming server (Eureka) 404 for `/actuator/prometheus`:
-  - It means metrics endpoint isn’t exposed; add Actuator + Prometheus deps and the properties above, then restart naming-server.
-
-## Stop and remove
-```
-docker compose down
-```
+- No traces in Grafana: verify your app exports to http://localhost:4318 or :4317, and that spans include `service.name`.
+- Service map empty: you need both traces (Tempo) and metrics (Prometheus) with labels that map `service.name` → Prometheus job label.
 

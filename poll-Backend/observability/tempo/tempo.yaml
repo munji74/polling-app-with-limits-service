@@ -1,6 +1,7 @@
 server:
   http_listen_port: 3200
 
+# Receivers for OTLP traces (HTTP and gRPC)
 distributor:
   receivers:
     otlp:
@@ -10,13 +11,17 @@ distributor:
         grpc:
           endpoint: 0.0.0.0:4317
 
+# Ingester settings for block creation
+ingester:
+  trace_idle_period: 10s
+  max_block_bytes: 1000000
+  max_block_duration: 5m
+
 storage:
   trace:
     backend: local
     local:
       path: /tmp/tempo/traces
-  wal:
-    path: /tmp/tempo/wal
 
 metrics_generator:
   registry:
@@ -29,8 +34,5 @@ compactor:
   compaction:
     block_retention: 24h
 
-querier:
-  search:
-    query_backend: local
-    search_backend: local
-
+querier: {}
+query_frontend: {}
