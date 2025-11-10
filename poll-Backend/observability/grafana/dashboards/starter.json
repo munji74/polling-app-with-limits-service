@@ -1,0 +1,47 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "HTTP Request Rate (poll-service)",
+      "datasource": {"uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(http_server_requests_seconds_count{job=\"poll-service\"}[1m]))", "legendFormat": "req/s"}
+      ],
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}
+    },
+    {
+      "type": "traces",
+      "title": "Recent Traces",
+      "datasource": {"uid": "tempo"},
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 16}
+    }
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["starter"],
+  "templating": {"list": []},
+  "time": {"from": "now-15m", "to": "now"},
+  "timezone": "",
+  "title": "Microservices Starter (Metrics + Traces)",
+  "version": 2
+}

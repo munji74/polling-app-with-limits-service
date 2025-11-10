@@ -1,0 +1,26 @@
+receivers:
+  otlp:
+    protocols:
+      grpc: {}
+      http: {}
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 8192
+
+exporters:
+  debug: {}
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  zipkin:
+    endpoint: http://zipkin:9411/api/v2/spans
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, otlp/tempo, zipkin]

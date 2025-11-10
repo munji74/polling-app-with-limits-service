@@ -1,4 +1,4 @@
-# Observability stack (Prometheus + Tempo + Grafana)
+# Observability stack (Prometheus + Tempo + Grafana + Zipkin)
 
 This folder runs metrics and tracing for the project.
 
@@ -11,6 +11,7 @@ Services and ports (from your host):
   - Metrics: GET /metrics
   - Get a trace (after one exists): GET /api/traces/{traceId}
   - OTLP ingest (from apps): gRPC on 4317, HTTP on 4318
+- Zipkin UI: http://localhost:9411
 
 ## Start/stop
 
@@ -77,3 +78,32 @@ docker compose up -d
 - No traces in Grafana: verify your app exports to http://localhost:4318 or :4317, and that spans include `service.name`.
 - Service map empty: you need both traces (Tempo) and metrics (Prometheus) with labels that map `service.name` → Prometheus job label.
 
+## Zipkin
+
+Zipkin expects spans via its collector endpoints:
+- Zipkin JSON v2: POST http://localhost:9411/api/v2/spans
+- OTLP (if using otel-collector normally; this image focuses on Zipkin format)
+
+Spring Boot (Spring Cloud Sleuth 3.x legacy) can auto-send spans to Zipkin if you set:
+```properties
+management.tracing.sampling.probability=1.0
+spring.zipkin.base-url=http://localhost:9411/
+``` 
+(If using modern OpenTelemetry instrumentation you typically send to Tempo instead; Zipkin here is for comparison and UI.)
+
+### Comparing Tempo vs Zipkin
+| Feature | Tempo | Zipkin |
+|---------|-------|--------|
+| Storage | Local block storage (scalable) | In-memory (here) / external backends | 
+| Protocol ingest | OTLP (HTTP+gRPC), Jaeger, Zipkin via receivers (not enabled here) | Zipkin JSON | 
+| UI | Via Grafana (rich correlation) | Built-in minimal UI | 
+| Service graph | Grafana plugin using traces + metrics | Basic dependency graph | 
+
+You can view the same application's spans in both systems if you export in both formats (e.g., OTLP to Tempo, Zipkin reporter to Zipkin) for learning.
+
+## Simplified stack
+We removed the OpenTelemetry Collector, Loki, and Promtail to reduce moving parts. Send OTLP traces directly to Tempo:
+- OTLP HTTP: http://localhost:4318
+- OTLP gRPC: http://localhost:4317
+
+Zipkin remains available at http://localhost:9411 for comparison/testing. If you want a single OTLP endpoint to fan out to both Tempo and Zipkin later, we can re-add the collector.

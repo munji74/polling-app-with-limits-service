@@ -17,8 +17,8 @@ services:
     command: ["-config.file=/etc/tempo.yaml"]
     ports:
       - "3200:3200"    # Tempo HTTP
-      - "4317:4317"    # OTLP gRPC
-      - "4318:4318"    # OTLP HTTP
+      - "4317:4317"    # OTLP gRPC (from host)
+      - "4318:4318"    # OTLP HTTP (from host)
     volumes:
       - ./tempo/tempo.yaml:/etc/tempo.yaml:ro
       - tempo_data:/tmp/tempo
@@ -46,6 +46,15 @@ services:
     depends_on:
       - prometheus
       - tempo
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    restart: unless-stopped
+    environment:
+      - STORAGE_TYPE=mem
+    ports:
+      - "9411:9411"
 
 volumes:
   prometheus_data:

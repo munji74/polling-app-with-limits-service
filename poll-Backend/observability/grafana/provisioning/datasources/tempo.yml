@@ -9,11 +9,6 @@ datasources:
     isDefault: false
     jsonData:
       httpMethod: GET
-      tracesToLogs:
-        datasourceUid: 'prometheus'
-        mappedTags:
-          - key: service.name
-            value: job
+      tracesToLogs: null
       serviceMap:
         datasourceUid: 'prometheus'
-
